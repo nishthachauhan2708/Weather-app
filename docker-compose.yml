@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  weather-app:
+    build: .
+    container_name: weather_app_container
+    ports:
+      - "5000:5000"
+    restart: always

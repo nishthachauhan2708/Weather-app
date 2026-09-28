@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Unit Testing') {
+            steps {
+                sh '''
+                    python3 -m venv venv || virtualenv venv
+                    . venv/bin/activate
+                    pip install -r requirements.txt
+                    pytest test_app.py -v
+                '''
+            }
+        }
+
+        stage('Docker Build & Package') {
+            steps {
+                sh '''
+                    docker build -t weather-dashboard:v1 .
+                '''
+            }
+        }
+
+        stage('Container Deploy (Local)') {
+            steps {
+                sh '''
+                    docker stop weather_live || true
+                    docker rm weather_live || true
+                    docker run -d --name weather_live -p 5000:5000 weather-dashboard:v1
+                    sleep 3
+                    curl -f http://localhost:5000/health || exit 1
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Phase 1: Automated Pipeline Executed Successfully!"
+        }
+    }
+}
